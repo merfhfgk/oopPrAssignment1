@@ -59,6 +59,60 @@ public:
             std::cout << "error: invalid shape parameters or type\n";
         }
     }
+    void listShapes () const {
+        if (shape.empty()) {
+            std::cout << "No shapes on board\n";
+            return;
+        }
+        for (const auto& s : shapes) {
+            std::cout << s->getInfo() << "\n";
+        }
+    }
+    
+    void selectById(int id) {
+        Shape* sh = findShapeById(id);
+        id (sh){
+            selectedId == id;
+            std::cout << "Selected shape: " << sh->getInfo() << "\n";
+        } else {
+            selectedId = -1;
+            std::cout << "Shape wasn't found\n";
+        }
+    }
+    
+    void selectByCoordinates(int px, int py) {
+        for (auto it = shapes.rbegin(); it != shapes.rend(); ++it) {
+            if ((*it)->contains(px, py)) {
+                selectedId = (*it)->getId();
+                std::cout << "Selected shape: " << (*it)->getInfo() << "\n";
+                return;
+            }
+        }
+        selectedId = -1;
+        std::cout << "Shape " << (*it)->getInfo() << " was not found\n";
+    }
+    
+    void removeSelected(){
+        if (selectedId == -1) {
+            std::cout << "Error: no shape was selected\n";
+            return;
+        }
+        for (auto it = shapes.begin(); it != shapes.end(); ++it) {
+            if ((*it)->getId() == selectedId) {
+                std::cout selectedId << " shape removed\n";
+                shapes.erase(it);
+                selectedId = -1;
+                return;
+            }
+        }
+    }
+    
+    void clearAll(){
+        shapes.clear();
+        board.clear();
+        selectedId = -1;
+        std::cout << "board is clear\n";
+    }
 };
 
 #endif // SHAPE_MANAGER_H
