@@ -10,9 +10,6 @@
 
 #include <string>
 #include "Board.hpp"
-#include "Shape.hpp"
-#include <cmath>
-#include <sstream>
 
 class Shape {
 protected:

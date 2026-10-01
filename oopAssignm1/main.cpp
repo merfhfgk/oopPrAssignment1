@@ -16,4 +16,7 @@ int main() {
     board.setPixel(100, 10, 'x');
     board.print();
     return 0;
+    
+    shapeMahager b;
+    
 }

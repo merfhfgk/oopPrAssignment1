@@ -110,4 +110,42 @@ public:
     }
 };
 
+class Triangle : public Shape {
+    int tx, ty, height;
+public:
+    Triangle(int id, const std::string& color, bool isFilled, int tx, int ty, int height) : Shape(id, color, isFilled), tx(tx), ty(ty), height(height) {}
+    
+    void draw(Board& board) const override {
+        char c = getColorChar();
+        for (int i = 0; i < height; ++i) {
+            int numStars = 2 * i + 1;
+            int leftMost = tx - i;
+            for (int j = 0; j < numStars; ++j) {
+                if (isFilled || j == 0 || j == numStars - 1 || i == height - 1) {
+                    board.setPixel(leftMost + j, ty + i, c);
+                }
+            }
+        }
+    }
+    
+    bool contains(int px, int py) const override {
+        if (py < ty || py >= ty + height) return false;
+        int i = py - ty;
+        int leftMost = tx - i;
+        int rightMost = tx + i;
+        if (isFilled) {
+            return px >= leftMost && px <= rightMost;
+        } else {
+            return px == leftMost || px == rightMost || (py == ty + height - 1 && px >= leftMost && px <= rightMost);
+        }
+    }
+    
+    std::string getInfo() const override {
+        std::ostringstream oss;
+        oss << id << " triangle " << color << " " << (isFilled ? "fill " : "frame ")
+            << tx << " " << ty << " " << height;
+        return oss.str();
+    }
+};
+
 #endif // SHAPES_H
