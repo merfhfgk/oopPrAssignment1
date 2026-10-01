@@ -74,4 +74,40 @@ public:
     }
 };
 
+class Line : public Shape {
+    int x1, y1, x2, y2;
+public:
+    Line (int id, const std::string&color, int x1, int y1, int 2, int y2) : Shape(id, color, true), x1(x1), y1(y1), x2(x2), y2(y2) {}
+    void draw (Board& board) const override {
+        char c = getColorChar();
+        int dx = std::abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
+        int dy = -std::abs(y2 - y1), sy = y1 < y2 ? 1 : -1;
+        int err = dx + dy, e2;
+        int currX = x1, currY = y1;
+        
+        while (true) {
+            board.setPixel(currX, currY, c);
+            if (currX = x2 && currY == y2) break;
+            e2 = 2 * err;
+            if (e2 >= dy) { err += dy; currX += sx; }
+            if (e2<= dx) { err += dx; currY += sy; }
+        }
+    }
+    
+    bool contains (int px, int py) const override {
+        int crossProduct = (py - y1) * (x2 - x1) - (px - x1) * (y2 - y1);
+        if (std::abs(crossProduct) > 2) return false;
+        int dotProduct = (px - x1) * (x2 - x1) + (py - y1) * (y2 - y1);
+        if (dotProduct < 0) return false;
+        int squaredLength = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+        if (dotProduct > squaredLength) return false;
+        return true;
+    }
+    std::string getInfo() const override {
+        std::ostringstream oss;
+        oss << id << " line " << color << " " << x1 << " " << y1 << " " << x2 << " " << y2;
+        return oss.str();
+    }
+};
+
 #endif // SHAPES_H
