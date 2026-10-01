@@ -9,7 +9,7 @@
 #define SHAPE_H
 
 #include <string>
-#include "Board.hpp"
+#include "Board.h"
 
 class Shape {
 protected:

@@ -8,18 +8,18 @@
 #ifndef SHAPES_H
 #define SHAPES_H
 
-#include "Shape.hpp"
+#include "Shape.h"
 #include <cmath>
 #include <sstream>
 
 class Box : public Shape {
     int x, y, width, height;
 public:
-    Box(int id, const std::string& color, bool isField, int x, int y, int w, int h ) : Shape(id, colour, isField), x(x), y(y), width(w), height(h) {}
+    Box(int id, const std::string& color, bool isField, int x, int y, int w, int h ) : Shape(id, color, isField), x(x), y(y), width(w), height(h) {}
     
     void draw(Board& board) const override {
         char c = getColorChar();
-        for (int i = 0; i < heoght; ++i){
+        for (int i = 0; i < height; ++i){
             for(int j = 0; j < width; ++j){
                 if (isFilled || i == 0 || i == height - 1 || j == 0 || j == width - 1) {
                     board.setPixel(x + j, y + i, c);
@@ -37,7 +37,7 @@ public:
     
     std::string getInfo() const override {
         std::ostringstream oos;
-        oos << id << " box " << color << " " << (isFilled ? "fill " : "frame ") << x << " " << y << " " << width << " " height;
+        oos << id << " box " << color << " " << (isFilled ? "fill " : "frame ") << x << " " << y << " " << width << " " << height;
         return oos.str();
     }
 };
@@ -45,18 +45,18 @@ public:
 class Circle : public Shape {
     int cx, cy, r;
 public:
-    Circle(int id, const std::string& colour, bool isFilled, int cx int cy, int r) : Shape(id, color, isFilled), cx(cx), cy(cy), r(r) {}
+    Circle(int id, const std::string& colour, bool isFilled, int cx, int cy, int r) : Shape(id, color, isFilled), cx(cx), cy(cy), r(r) {}
     
     void draw(Board& board) const override {
-        char c = getColorCHar();
+        char c = getColorChar();
         for (int i = -r; i <= r; ++i){
             for (int j = -r; j <= r; ++j){
                 int distSq = j * j + i * i;
                 if (isFilled) {
                     if (distSq <= r * r) board.setPixel(cx + j, cy + i, c);
                 } else {
-                    if (distSq >= (r-1) * (r -1) && destSq <= r*r {
-                        board.setPixel (cx + j, cy +i, c));
+                    if (distSq >= (r-1) * (r -1) && distSq <= r*r) {
+                        board.setPixel (cx + j, cy +i, c);
                     }
                 }
             }
@@ -65,19 +65,19 @@ public:
     bool contains (int px, int py) const override {
         int distSq = (px - cx) * (px - cx) + (py - cy) * (py - cy);
         if (isFilled) return distSq <= r * r;
-        return distSq >= (r-1) * (r-1) && distSq <= r & r;
+        return distSq >= (r-1) * (r-1) && distSq <= r && r;
     }
     std::string getInfo() const override {
         std::ostringstream oos;
-        oss << id << " circle " << color << " " << (isFilled ? "fill " : "frame ") << cx << " " << cy << " " << r;
-        retunr oss.str();
+        oos << id << " circle " << color << " " << (isFilled ? "fill " : "frame ") << cx << " " << cy << " " << r;
+        return oos.str();
     }
 };
 
 class Line : public Shape {
     int x1, y1, x2, y2;
 public:
-    Line (int id, const std::string&color, int x1, int y1, int 2, int y2) : Shape(id, color, true), x1(x1), y1(y1), x2(x2), y2(y2) {}
+    Line (int id, const std::string&color, int x1, int y1, int x2, int y2) : Shape(id, color, true), x1(x1), y1(y1), x2(x2), y2(y2) {}
     void draw (Board& board) const override {
         char c = getColorChar();
         int dx = std::abs(x2 - x1), sx = x1 < x2 ? 1 : -1;
@@ -87,7 +87,7 @@ public:
         
         while (true) {
             board.setPixel(currX, currY, c);
-            if (currX = x2 && currY == y2) break;
+            if (currX == x2 && currY == y2) break;
             e2 = 2 * err;
             if (e2 >= dy) { err += dy; currX += sx; }
             if (e2<= dx) { err += dx; currY += sy; }

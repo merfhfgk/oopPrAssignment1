@@ -8,9 +8,9 @@
 #ifndef SHAPE_MANAGER_H
 #define SHAPE_MANAGER_H
 
-#include "Board.hpp"
-#include "Shape.hpp"
-#include "Shapes.hpp"
+#include "Board.h"
+#include "Shape.h"
+#include "Shapes.h"
 #include <vector>
 #include <memory>
 #include <iostream>
@@ -54,9 +54,9 @@ public:
         
         if (newShape) {
             shapes.push_back(std::move(newShape));
-            std::cout << "shape added with id " << (nextId - 1) << "\n";
+            std::cout << "Shape added with id " << (nextId - 1) << "\n";
         } else {
-            std::cout << "error: invalid shape parameters or type\n";
+            std::cout << "Error: invalid shape parameters or type\n";
         }
     }
     void listShapes () const {
@@ -111,7 +111,81 @@ public:
         shapes.clear();
         board.clear();
         selectedId = -1;
-        std::cout << "board is clear\n";
+        std::cout << "Board is clear\n";
+    }
+    
+    void paintSelected(const string& newColor) {
+        Shape* sh = findShapeBuId(selectedId);
+        if (!sh) {
+            cout << "Error: no shape selected\n";
+            return;
+        }
+        s->setColor(newColor);
+        cout << "Shape painted to " << newColor << "\n";
+    }
+    
+    void saveToFile(const string& filepath) const {
+        ofstream outFile(filepath);
+        if (!outFile.is_open()) {
+            cout << "Error: could not open file for writing\n";
+            return;
+        }
+        for (const auto& s : shapes) {
+            outFile << s->getInfo() << "\n";
+        }
+        cout << "Board is saved to " << filepath << "\n";
+    }
+    
+    void loadFromFile(const string& filepath) {
+        ifstream inFile(filepath);
+        if (!inFile.is_open()) {
+            cout << "Error: could not open file or file is invalid\n"; //
+            return;
+        }
+
+        vector<unique_ptr<Shape>> tempShapes;
+        string line;
+        int maxId = 0;
+
+        while (getline(inFile, line)) {
+            if (line.empty()) continue;
+            stringstream ss(line);
+            int id;
+            string type, color, modeOrParam;
+            ss >> id >> type >> color;
+            
+            if (id > maxId) maxId = id;
+            if (type == "box") {
+                string mode;
+                ss >> mode;
+                bool fill = (mode == "fill");
+                int x, y, w, h;
+                ss >> x >> y >> w >> h;
+                tempShapes.push_back(make_unique<Box>(id, color, fill, x, y, w, h));
+            } else if (type == "circle") {
+                string mode;
+                ss >> mode;
+                bool fill = (mode == "fill");
+                int cx, cy, r;
+                ss >> cx >> cy >> r;
+                tempShapes.push_back(make_unique<Circle>(id, color, fill, cx, cy, r));
+            } else if (type == "line") {
+                int x1, y1, x2, y2;
+                ss >> x1 >> y1 >> x2 >> y2;
+                tempShapes.push_back(make_unique<Line>(id, color, x1, y1, x2, y2));
+            } else if (type == "triangle") {
+                string mode;
+                ss >> mode;
+                bool fill = (mode == "fill");
+                int tx, ty, h;
+                ss >> tx >> ty >> h;
+                tempShapes.push_back(make_unique<Triangle>(id, color, fill, tx, ty, h));
+            }
+        }
+        shapes = move(tempShapes);
+        nextId = maxId + 1;
+        selectedId = -1;
+        cout << "board is loaded from " << filepath << "\n";
     }
 };
 
