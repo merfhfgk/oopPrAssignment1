@@ -16,34 +16,24 @@ private:
     int width;
     int height;
     std::vector<std::vector<char>> grid;
-    std::vector<std::vector<int>> colors;
 public:
     Board(int w = 80, int h = 25) : width(w), height(h){
         clear();
     }
     void clear(){
         grid.assign(height, std::vector<char>(width, ' '));
-        colors.assign(height, std::vector<int>(width, 0));
     }
     void print() const{
         for (int y = 0; y < height; y++){
-            int current = 0;
-            for (int x = 0; x < width; x++){
-                if (grid[y][x] != ' ' && colors[y][x] != current) {
-                    current = colors[y][x];
-                    std::cout << "\033[" << current << "m";
-                }
+            for (int x = 0; x < width; x++) {
                 std::cout << grid[y][x];
             }
-            if (current != 0) std::cout << "\033[0m";
             std::cout << '\n';
         }
     }
-    
-    void setPixel(int x, int y, char c, int colorCode = 0) {
+    void setPixel(int x, int y, char c) {
         if (x >= 0 && x < width && y >= 0 && y < height) {
             grid[y][x]=c;
-            colors[y][x] = colorCode;
         }
     }
 

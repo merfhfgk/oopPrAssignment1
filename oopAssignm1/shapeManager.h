@@ -25,12 +25,60 @@ private:
     int nextId = 1;
     int selectedId = -1;
     
-    Shape* findShapeById(int id) {
-        for (auto& s : shapes) {
-            if (s->getId() == id) return s.get();
+    int findIndexById(int id) const {
+        for (size_t i = 0; i < shapes.size(); ++i) {
+            if (shapes[i]->getId() == id) return (int)i;
         }
-        return nullptr;
+        return -1;
     }
+    std::unique_ptr<Shape> createShape(int id, const std::string& type, const std::string& color,
+                                           bool isFilled, const std::vector<int>& p) const {
+        for (int v : p) {
+            if (v > 10000 || v < -10000) return nullptr;   // захист від переповнення
+        }
+        std::unique_ptr<Shape> shape;
+        if (type == "box" && p.size() == 4) {
+            shape = std::make_unique<Box>(id, color, isFilled, p[0], p[1], p[2], p[3]);
+        } else if (type == "circle" && p.size() == 3) {
+            shape = std::make_unique<Circle>(id, color, isFilled, p[0], p[1], p[2]);
+        } else if (type == "line" && p.size() == 4) {
+            shape = std::make_unique<Line>(id, color, isFilled, p[0], p[1], p[2], p[3]);
+        } else if (type == "triangle" && p.size() == 3) {
+            shape = std::make_unique<Triangle>(id, color, isFilled, p[0], p[1], p[2]);
+        }
+        if (shape && !shape->isValid()) shape = nullptr;
+        return shape;
+    }
+    std::string checkPlacement(const Shape& s, int ignoreId,
+    const std::vector<std::unique_ptr<Shape>>& list) const {
+        Rect r = s.getBounds();
+        bool tooBig = (r.right - r.left + 1 > board.getWidth()) || (r.bottom - r.top + 1 > board.getHeight());
+        bool outside = (r.right < 0 || r.bottom < 0 || r.left >= board.getWidth() || r.top >= board.getHeight());
+        if (tooBig || outside) return "error: shape will go out of the board";
+        for (const auto& other : list) {
+            if (other->getId() != ignoreId && other->sameAs(s)) {
+                return "error: the same shape already exists";
+            }
+        }
+        return "";
+    }
+    
+    bool parseLine(const std::string& line, std::unique_ptr<Shape>& result) const {
+        std::stringstream ss(line);
+        int id;
+        std::string type, mode, color;
+        if (!(ss >> id >> type >> mode >> color)) return false;
+        if (id <= 0 || (mode != "fill" && mode != "frame")) return false;
+     
+        std::vector<int> params;
+        int p;
+        while (ss >> p) params.push_back(p);
+        if (!ss.eof()) return false;   // в кінці рядка лишилось щось не число
+    
+        result = createShape(id, type, color, mode == "fill", params);
+        return result != nullptr;
+    }
+    
 public:
     void drawBoard() {
         board.clear();
@@ -40,27 +88,32 @@ public:
         board.print();
     }
     
-    void addShape(const std::string& type, const std::string& color, bool isFilled, const std::vector<int>& params) {
-        std::unique_ptr<Shape> newShape = nullptr;
-        if (type == "box" && params.size() >= 4) {
-            newShape = std::make_unique<Box>(nextId++, color, isFilled, params[0], params[1], params[2], params[3]);
-        } else if (type == "circle" && params.size() >= 3) {
-            newShape = std::make_unique<Circle>(nextId++, color, isFilled, params[0], params[1], params[2]);
-        } else if (type == "line" && params.size() >= 4) {
-            newShape = std::make_unique<Line>(nextId++, color, params[0], params[1], params[2], params[3]);
-        } else if (type == "triangle" && params.size() >= 3) {
-            newShape = std::make_unique<Triangle>(nextId++, color, isFilled, params[0], params[1], params[2]);
-        }
-        
-        if (newShape) {
-            shapes.push_back(std::move(newShape));
-            std::cout << "Shape added with id " << (nextId - 1) << "\n";
-        } else {
-            std::cout << "Error: invalid shape parameters or type\n";
-        }
+    void printAvailableShapes() const {
+        std::cout << "box <x> <y> <width> <height>\n";
+        std::cout << "circle <x> <y> <radius>\n";
+        std::cout << "line <x1> <y1> <x2> <y2>\n";
+        std::cout << "triangle <x> <y> <height>\n";
+        std::cout << "usage: add <shape> fill|frame <color> <params>\n";
     }
+    
+    void addShape(const std::string& type, const std::string& color, bool isFilled, const std::vector<int>& params) {
+        std::unique_ptr<Shape> newShape = createShape(nextId, type, color, isFilled, params);
+        if (!newShape) {
+            std::cout << "error: invalid shape parameters or type\n";
+            return;
+        }
+        std::string error = checkPlacement(*newShape, -1, shapes);
+        if (!error.empty()) {
+            std::cout << error << "\n";
+            return;
+        }
+        std::cout << newShape->getInfo() << "\n";
+        shapes.push_back(std::move(newShape));
+        nextId++;
+    }
+     
     void listShapes () const {
-        if (shape.empty()) {
+        if (shapes.empty()) {
             std::cout << "No shapes on board\n";
             return;
         }
@@ -70,10 +123,10 @@ public:
     }
     
     void selectById(int id) {
-        Shape* sh = findShapeById(id);
-        id (sh){
-            selectedId == id;
-            std::cout << "Selected shape: " << sh->getInfo() << "\n";
+        int index = findIndexById(id);
+        if (index != -1){
+            selectedId = id;
+            std::cout << shapes[index]->getInfo() << "\n";
         } else {
             selectedId = -1;
             std::cout << "Shape wasn't found\n";
@@ -81,30 +134,26 @@ public:
     }
     
     void selectByCoordinates(int px, int py) {
-        for (auto it = shapes.rbegin(); it != shapes.rend(); ++it) {
-            if ((*it)->contains(px, py)) {
-                selectedId = (*it)->getId();
-                std::cout << "Selected shape: " << (*it)->getInfo() << "\n";
+        for (int i = (int)shapes.size() - 1; i >= 0; --i) {
+            if (shapes[i]->contains(px, py)) {
+                selectedId = shapes[i]->getId();
+                std::cout << shapes[i]->getInfo() << "\n";
                 return;
             }
         }
         selectedId = -1;
-        std::cout << "Shape " << (*it)->getInfo() << " was not found\n";
+        std::cout << "Shape wasn't found\n";
     }
     
     void removeSelected(){
-        if (selectedId == -1) {
+        int index = findIndexById(selectedId);
+        if (index == -1) {
             std::cout << "Error: no shape was selected\n";
             return;
         }
-        for (auto it = shapes.begin(); it != shapes.end(); ++it) {
-            if ((*it)->getId() == selectedId) {
-                std::cout selectedId << " shape removed\n";
-                shapes.erase(it);
-                selectedId = -1;
-                return;
-            }
-        }
+        std::cout << shapes[index]->getId() << " " << shapes[index]->getName() << " removed\n";
+        shapes.erase(shapes.begin() + index);
+        selectedId = -1;
     }
     
     void clearAll(){
@@ -112,6 +161,31 @@ public:
         board.clear();
         selectedId = -1;
         std::cout << "Board is clear\n";
+    }
+    
+    void editSelected(const std::vector<int>& params) {
+        int index = findIndexById(selectedId);
+        if (index == -1) {
+            std::cout << "error: no shape was selected\n";
+            return;
+        }
+        if ((int)params.size() != shapes[index]->getEditParamCount()) {
+            std::cout << "error: invalid argument count\n";
+            return;
+        }
+        std::unique_ptr<Shape> copy = shapes[index]->clone();
+        copy->edit(params);
+        if (!copy->isValid()) {
+            std::cout << "error: invalid argument\n";
+            return;
+        }
+        std::string error = checkPlacement(*copy, selectedId, shapes);
+        if (!error.empty()) {
+            std::cout << error << "\n";
+            return;
+        }
+        std::cout << "size of " << copy->getName() << " changed\n";
+        shapes[index] = std::move(copy);
     }
     
     void paintSelected(const string& newColor) {
