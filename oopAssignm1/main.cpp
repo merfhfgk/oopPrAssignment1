@@ -13,12 +13,24 @@
 
 using namespace std;
 
+bool readNumbers(stringstream& ss, vector<int>& numbers) {
+    int p;
+    while (ss >> p) {
+        numbers.push_back(p);
+    }
+    if (!ss.eof()) {
+        cout << "error: invalid argument\n";
+        return false;
+    }
+    return true;
+}
+
 int main() {
     ShapeManager manager;
     string commandLine;
 
-    cout << "=== Shapes Blackboard Application ==_\n";
-    cout << "Type 'shapes' to see available commands or enter commands below:\n> ";
+    cout << "--- Shapes Blackboard Application ---\n";
+    cout << "Type 'shapes' to see available shapes or enter commands below:\n> ";
 
     while (getline(cin, commandLine)) {
         if (commandLine.empty()) {
@@ -39,9 +51,9 @@ int main() {
         else if (cmd == "list") {
             manager.listShapes();
         }
-        //else if (cmd == "shapes") {
-        //    manager.printAvailableShapes();
-        //}
+        else if (cmd == "shapes") {
+            manager.printAvailableShapes();
+        }
         else if (cmd == "clear") {
             manager.clearAll();
         }
@@ -49,49 +61,70 @@ int main() {
             manager.removeSelected();
         }
         else if (cmd == "add") {
-            string color, type, modeStr;
-            ss >> color >> type;
-            
-            bool isFilled = false;
-            if (type != "line") {
-                ss >> modeStr;
-                isFilled = (modeStr == "fill");
-            }
+            string type, mode, color;
+            ss >> type >> mode >> color;
 
             vector<int> params;
-            int p;
-            while (ss >> p) {
-                params.push_back(p);
+            if (color.empty() || (mode != "fill" && mode != "frame")) {
+                cout << "error: usage: add <shape> fill|frame <color> <params>\n";
+            } else if (readNumbers(ss, params)) {
+                manager.addShape(type, color, mode == "fill", params);
             }
-            manager.addShape(type, color, isFilled, params);
         }
         else if (cmd == "select") {
-            int arg1, arg2;
-            if (ss >> arg1) {
-                if (ss >> arg2) {
-                    manager.selectByCoordinates(arg1, arg2);
+            vector<int> nums;
+            if (readNumbers(ss, nums)) {
+                if (nums.size() == 1) {
+                    manager.selectById(nums[0]);
+                } else if (nums.size() == 2) {
+                    manager.selectByCoordinates(nums[0], nums[1]);
                 } else {
-                    manager.selectById(arg1);
+                    cout << "error: usage: select <id> or select <x> <y>\n";
                 }
             }
         }
-        else if (cmd == "save") {
-            string filepath;
-            ss >> filepath;
-            manager.saveToFile(filepath);
+        else if (cmd == "edit") {
+            vector<int> nums;
+            if (readNumbers(ss, nums)) {
+                manager.editSelected(nums);
+            }
         }
-        else if (cmd == "load") {
+        else if (cmd == "paint") {
+            string color;
+            ss >> color;
+            if (color.empty()) {
+                cout << "error: usage: paint <color>\n";
+            } else {
+                manager.paintSelected(color);
+            }
+        }
+        else if (cmd == "move") {
+            vector<int> nums;
+            if (readNumbers(ss, nums)) {
+                if (nums.size() == 2) {
+                    manager.moveSelected(nums[0], nums[1]);
+                } else {
+                    cout << "error: usage: move <x> <y>\n";
+                }
+            }
+        }
+        else if (cmd == "save" || cmd == "load") {
             string filepath;
-            ss >> filepath;
-            manager.loadFromFile(filepath);
+            getline(ss >> ws, filepath);
+            if (filepath.empty()) {
+                cout << "error: file path is missing\n";
+            } else if (cmd == "save") {
+                manager.saveToFile(filepath);
+            } else {
+                manager.loadFromFile(filepath);
+            }
         }
         else {
             cout << "Unknown command: " << cmd << "\n";
         }
 
-        cout << "> ";
+        cout << ">> ";
     }
 
     return 0;
 }
-

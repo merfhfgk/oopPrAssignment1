@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <memory>
 #include <typeinfo>
 #include "Board.h"
@@ -46,6 +47,15 @@ public:
     
     char getColorChar() const{
         return color.empty() ? '*' : color[0];
+    }
+    
+    int getColorCode() const {
+        static const std::map<std::string, int> codes = {
+            {"black", 30}, {"red", 31}, {"green", 32}, {"yellow", 33},
+            {"blue", 34}, {"magenta", 35}, {"cyan", 36}, {"white", 37}
+        };
+        auto it = codes.find(color);
+        return it == codes.end() ? 0 : it->second;
     }
     
     void setColor(const std::string& newColor) { color = newColor; }

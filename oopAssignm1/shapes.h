@@ -23,7 +23,7 @@ public:
         for (int i = 0; i < height; ++i){
             for(int j = 0; j < width; ++j){
                 if (isFilled || i == 0 || i == height - 1 || j == 0 || j == width - 1) {
-                    board.setPixel(x + j, y + i, c);
+                    board.setPixel(x + j, y + i, c, getColorCode());
                 }
             }
         }
@@ -68,7 +68,7 @@ public:
                     if (distSq <= r * r) board.setPixel(cx + j, cy + i, c);
                 } else {
                     if (distSq >= (r-1) * (r -1) && distSq <= r*r) {
-                        board.setPixel (cx + j, cy +i, c);
+                        board.setPixel (cx + j, cy +i, c, getColorCode());
                     }
                 }
             }
@@ -112,7 +112,7 @@ public:
         int currX = x1, currY = y1;
         
         while (true) {
-            board.setPixel(currX, currY, c);
+            board.setPixel(currX, currY, c, getColorCode());
             if (currX == x2 && currY == y2) break;
             e2 = 2 * err;
             if (e2 >= dy) { err += dy; currX += sx; }
@@ -171,7 +171,7 @@ public:
             int leftMost = tx - i;
             for (int j = 0; j < numStars; ++j) {
                 if (isFilled || j == 0 || j == numStars - 1 || i == height - 1) {
-                    board.setPixel(leftMost + j, ty + i, c);
+                    board.setPixel(leftMost + j, ty + i, c, getColorCode());
                 }
             }
         }

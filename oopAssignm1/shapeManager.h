@@ -34,7 +34,7 @@ private:
     std::unique_ptr<Shape> createShape(int id, const std::string& type, const std::string& color,
                                            bool isFilled, const std::vector<int>& p) const {
         for (int v : p) {
-            if (v > 10000 || v < -10000) return nullptr;   // захист від переповнення
+            if (v > 10000 || v < -10000) return nullptr;
         }
         std::unique_ptr<Shape> shape;
         if (type == "box" && p.size() == 4) {
@@ -73,7 +73,7 @@ private:
         std::vector<int> params;
         int p;
         while (ss >> p) params.push_back(p);
-        if (!ss.eof()) return false;   // в кінці рядка лишилось щось не число
+        if (!ss.eof()) return false;
     
         result = createShape(id, type, color, mode == "fill", params);
         return result != nullptr;
@@ -188,78 +188,80 @@ public:
         shapes[index] = std::move(copy);
     }
     
-    void paintSelected(const string& newColor) {
-        Shape* sh = findShapeBuId(selectedId);
-        if (!sh) {
-            cout << "Error: no shape selected\n";
+    void paintSelected(const std::string& newColor) {
+        int index = findIndexById(selectedId);
+        if (index == -1) {
+            std::cout << "error: no shape was selected\n";
             return;
         }
-        s->setColor(newColor);
-        cout << "Shape painted to " << newColor << "\n";
+        shapes[index]->setColor(newColor);
+        std::cout << shapes[index]->getId() << " " << shapes[index]->getName() << " " << newColor << "\n";
     }
     
-    void saveToFile(const string& filepath) const {
-        ofstream outFile(filepath);
+    void moveSelected(int x, int y) {
+        int index = findIndexById(selectedId);
+        if (index == -1) {
+            std::cout << "error: no shape was selected\n";
+            return;
+        }
+        std::unique_ptr<Shape> copy = shapes[index]->clone();
+        copy->moveTo(x, y);
+        std::string error = checkPlacement(*copy, selectedId, shapes);
+        if (!error.empty()) {
+            std::cout << error << "\n";
+            return;
+        }
+        shapes.erase(shapes.begin() + index);
+        std::cout << copy->getId() << " " << copy->getName() << " moved\n";
+        shapes.push_back(std::move(copy));
+    }
+    
+    void saveToFile(const std::string& filepath) const {
+        std::ofstream outFile(filepath);
         if (!outFile.is_open()) {
-            cout << "Error: could not open file for writing\n";
+            std::cout << "Error: could not open file for writing\n";
             return;
         }
         for (const auto& s : shapes) {
             outFile << s->getInfo() << "\n";
         }
-        cout << "Board is saved to " << filepath << "\n";
+        std::cout << "Board is saved to " << filepath << "\n";
     }
     
-    void loadFromFile(const string& filepath) {
-        ifstream inFile(filepath);
+    void loadFromFile(const std::string& filepath) {
+        std::ifstream inFile(filepath);
         if (!inFile.is_open()) {
-            cout << "Error: could not open file or file is invalid\n"; //
+            std::cout << "Error: could not open file\n";
             return;
         }
-
-        vector<unique_ptr<Shape>> tempShapes;
-        string line;
+    
+        std::vector<std::unique_ptr<Shape>> tempShapes;
+        std::string line;
         int maxId = 0;
 
-        while (getline(inFile, line)) {
+        while (std::getline(inFile, line)) {
+            if (!line.empty() && line.back() == '\r') line.pop_back();
             if (line.empty()) continue;
-            stringstream ss(line);
-            int id;
-            string type, color, modeOrParam;
-            ss >> id >> type >> color;
             
-            if (id > maxId) maxId = id;
-            if (type == "box") {
-                string mode;
-                ss >> mode;
-                bool fill = (mode == "fill");
-                int x, y, w, h;
-                ss >> x >> y >> w >> h;
-                tempShapes.push_back(make_unique<Box>(id, color, fill, x, y, w, h));
-            } else if (type == "circle") {
-                string mode;
-                ss >> mode;
-                bool fill = (mode == "fill");
-                int cx, cy, r;
-                ss >> cx >> cy >> r;
-                tempShapes.push_back(make_unique<Circle>(id, color, fill, cx, cy, r));
-            } else if (type == "line") {
-                int x1, y1, x2, y2;
-                ss >> x1 >> y1 >> x2 >> y2;
-                tempShapes.push_back(make_unique<Line>(id, color, x1, y1, x2, y2));
-            } else if (type == "triangle") {
-                string mode;
-                ss >> mode;
-                bool fill = (mode == "fill");
-                int tx, ty, h;
-                ss >> tx >> ty >> h;
-                tempShapes.push_back(make_unique<Triangle>(id, color, fill, tx, ty, h));
+            std::unique_ptr<Shape> shape;
+            bool ok = parseLine(line, shape);
+            if (ok) {
+                for (const auto& s : tempShapes) {
+                    if (s->getId() == shape->getId()) ok = false;
+                }
             }
+            if (ok && !checkPlacement(*shape, -1, tempShapes).empty()) ok = false;
+            if (!ok) {
+                std::cout << "error: file is invalid, board was not loaded\n";
+                return;
+            }
+            if (shape->getId() > maxId) maxId = shape->getId();
+            tempShapes.push_back(std::move(shape));
         }
-        shapes = move(tempShapes);
+        shapes = std::move(tempShapes);
         nextId = maxId + 1;
         selectedId = -1;
-        cout << "board is loaded from " << filepath << "\n";
+        std::cout << "board is loaded from " << filepath << "\n";
     }
 };
 
